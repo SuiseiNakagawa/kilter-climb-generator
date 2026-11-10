@@ -1,0 +1,566 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Setter Lab</title>
+<style>
+/* Desktop app: board fills the left, a fixed-width control panel on the right. Dark, like a board lit at night. */
+:root {
+  --bg: #0e1113;
+  --panel: #161a1d;
+  --panel-2: #1d2226;
+  --line: #2a3137;
+  --fg: #e9edef;
+  --muted: #8d989f;
+  --faint: #5d676e;
+  --accent: #27c8f0;
+  --board: #1b1f22;
+  --board-edge: #262b2f;
+  --kicker: #16191b;
+  --hole: #333b41;
+  --start: #3ddc5a;
+  --hand: #27c8f0;
+  --finish: #f24bd3;
+  --foot: #ffa21f;
+  --good: #4cc98a;
+  --warn: #f0a04b;
+  --bad: #f07a63;
+  --f-ui: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  --f-num: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body { background: var(--bg); color: var(--fg); font: 14px/1.45 var(--f-ui); min-width: 1100px; overflow: hidden; }
+button, select, input { font: inherit; color: inherit; }
+button { cursor: pointer; }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* header */
+header { height: 56px; display: flex; align-items: center; gap: 18px; padding: 0 20px; white-space: nowrap; border-bottom: 1px solid var(--line); background: var(--panel); }
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 16px; letter-spacing: .01em; }
+.brand .dot { width: 12px; height: 12px; border-radius: 50%; border: 2.5px solid var(--hand); box-shadow: 0 0 8px var(--hand); }
+.brand small { font-weight: 400; color: var(--muted); font-size: 12px; margin-left: 4px; }
+@media (max-width: 1500px) { .brand small { display: none; } }
+@media (max-width: 1250px) { .reach .ape { display: none; } }
+.tabs { display: flex; gap: 2px; background: var(--bg); padding: 3px; border-radius: 9px; }
+.tabs button { background: none; border: 0; padding: 6px 16px; border-radius: 7px; color: var(--muted); font-weight: 500; }
+.tabs button[aria-selected="true"] { background: var(--panel-2); color: var(--fg); box-shadow: inset 0 0 0 1px var(--line); }
+.tabs .count { font-family: var(--f-num); font-size: 12px; color: var(--faint); margin-left: 4px; }
+.reach { margin-left: auto; display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 13px; }
+.reach .sep { width: 1px; height: 22px; background: var(--line); margin: 0 4px; }
+.reach .ape { font-family: var(--f-num); color: var(--muted); }
+.reach .gap { color: var(--fg); }
+.reach .gap b { font-family: var(--f-num); }
+.reach select { width: auto; padding: 4px 6px; border-radius: 6px; }
+.reach input { width: 58px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 4px 8px; text-align: right; font-family: var(--f-num); }
+.reach .help { width: 18px; height: 18px; border-radius: 50%; border: 1px solid var(--line); display: inline-grid; place-items: center; font-size: 11px; color: var(--muted); position: relative; }
+.reach .help:hover .tipbox, .reach .help:focus .tipbox { display: block; }
+.tipbox { display: none; position: absolute; right: 0; top: 26px; width: 300px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; color: var(--fg); font-size: 12.5px; z-index: 5; line-height: 1.5; }
+
+/* layout */
+main { height: calc(100% - 56px); display: grid; grid-template-columns: minmax(0, 1fr) 400px; }
+.stage { display: grid; place-items: center; padding: 20px; min-width: 0; position: relative; }
+#board { height: 100%; max-height: calc(100vh - 96px); width: auto; max-width: 100%; display: block; user-select: none; }
+.stage .caption { position: absolute; left: 24px; bottom: 14px; color: var(--faint); font-size: 12px; }
+aside { border-left: 1px solid var(--line); background: var(--panel); overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 18px; }
+
+/* panel pieces */
+.row { display: flex; gap: 10px; align-items: end; }
+.field { display: grid; gap: 4px; flex: 1; }
+.field label, .label { font-size: 11.5px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); }
+select, .field input[type=number] { background: var(--bg); border: 1px solid var(--line); border-radius: 7px; padding: 7px 10px; width: 100%; }
+.hint { color: var(--muted); font-size: 13px; }
+.hint kbd { font-family: var(--f-num); font-size: 11.5px; background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; }
+.roles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.role { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; display: grid; gap: 1px; }
+.role .n { font-family: var(--f-num); font-size: 16px; font-weight: 600; }
+.role .t { font-size: 11.5px; color: var(--muted); display: flex; align-items: center; gap: 5px; }
+.role i { width: 9px; height: 9px; border-radius: 50%; border: 2px solid; display: inline-block; }
+
+.card { background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px; padding: 16px; display: grid; gap: 12px; }
+.grade { display: flex; align-items: baseline; gap: 14px; }
+.grade .big { font-size: 56px; font-weight: 800; line-height: 1; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.grade .big.pending { color: var(--faint); }
+.grade .sub { color: var(--muted); font-family: var(--f-num); font-size: 13px; display: grid; }
+.target { font-size: 12.5px; font-weight: 600; padding: 2px 8px; border-radius: 999px; justify-self: start; }
+.target.ok { color: var(--good); background: color-mix(in srgb, var(--good) 15%, transparent); }
+.target.off { color: var(--warn); background: color-mix(in srgb, var(--warn) 15%, transparent); }
+.note { font-size: 12px; color: var(--faint); }
+.warnings { display: grid; gap: 4px; }
+.warnings div { color: var(--warn); font-size: 13px; }
+.stat { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.stat .v { font-family: var(--f-num); font-weight: 600; }
+.chip { font-size: 12px; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+.chip.ok { color: var(--good); background: color-mix(in srgb, var(--good) 15%, transparent); }
+.chip.over { color: var(--bad); background: color-mix(in srgb, var(--bad) 15%, transparent); }
+.checks { display: grid; gap: 5px; font-size: 13px; }
+.check { display: grid; grid-template-columns: 16px 1fr auto; gap: 8px; align-items: baseline; }
+.check .mark.ok { color: var(--good); } .check .mark.bad { color: var(--bad); }
+.check .val { font-family: var(--f-num); font-size: 12px; color: var(--muted); }
+.check .val b { color: var(--fg); font-weight: 500; }
+.closest { font-size: 13px; color: var(--muted); }
+.closest b { color: var(--fg); font-weight: 600; }
+
+.btns { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn { background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: 8px 14px; font-weight: 500; }
+.btn:hover { border-color: var(--faint); }
+.btn.primary { background: var(--accent); color: #062029; border-color: var(--accent); font-weight: 700; flex: 1; padding: 11px; font-size: 15px; }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn:disabled { opacity: .5; cursor: progress; }
+.check-line { display: flex; gap: 8px; align-items: center; font-size: 13.5px; }
+.check-line input { width: 16px; height: 16px; accent-color: var(--accent); }
+
+.nav { display: flex; align-items: center; justify-content: space-between; }
+.nav .pos { font-family: var(--f-num); color: var(--muted); }
+.nav button { width: 34px; height: 34px; border-radius: 8px; background: var(--bg); border: 1px solid var(--line); font-size: 16px; }
+.summary { font-size: 12.5px; color: var(--muted); font-family: var(--f-num); }
+.empty { color: var(--muted); font-size: 13.5px; text-align: center; padding: 24px 8px; border: 1px dashed var(--line); border-radius: 12px; }
+
+.saved { display: grid; gap: 8px; }
+.saved-item { display: grid; grid-template-columns: 1fr auto auto; gap: 8px; align-items: center; background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+.saved-item .name { font-weight: 600; }
+.saved-item .meta { font-size: 12px; color: var(--muted); font-family: var(--f-num); }
+.saved-item button { background: none; border: 1px solid var(--line); border-radius: 7px; padding: 4px 10px; color: var(--muted); }
+.saved-item button:hover { color: var(--fg); }
+.save-form { display: flex; gap: 8px; }
+.save-form input { flex: 1; background: var(--bg); border: 1px solid var(--line); border-radius: 7px; padding: 7px 10px; }
+.toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); background: var(--panel-2); border: 1px solid var(--line); padding: 8px 14px; border-radius: 8px; font-size: 13px; }
+
+/* board */
+.hole { fill: var(--hole); }
+.hit { fill: transparent; cursor: pointer; }
+.hit:hover + .hover-ring, .hover-ring.show { opacity: 1; }
+.hover-ring { fill: none; stroke: var(--muted); stroke-width: .6; opacity: 0; pointer-events: none; }
+.led { fill: none; stroke-width: 1.9; pointer-events: none; }
+.glow { fill: none; stroke-width: 4.5; opacity: .32; pointer-events: none; filter: blur(1.2px); }
+.r-start { stroke: var(--start); } .r-hand { stroke: var(--hand); } .r-finish { stroke: var(--finish); } .r-foot { stroke: var(--foot); }
+.gap-line { stroke-width: .9; stroke-dasharray: 2.2 1.6; pointer-events: none; }
+.gap-label { font: 600 4.2px var(--f-num); pointer-events: none; paint-order: stroke; stroke: var(--board); stroke-width: 1.6px; stroke-linejoin: round; }
+.read-only .hit { cursor: default; }
+@media (prefers-reduced-motion: no-preference) { .led { transition: stroke .12s; } }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><span class="dot" aria-hidden="true"></span>Setter Lab <small>12×12 Kilter Board Original layout</small></div>
+  <div class="tabs" role="tablist" aria-label="Mode">
+    <button role="tab" id="tab-set" aria-selected="true">Set a climb</button>
+    <button role="tab" id="tab-gen" aria-selected="false">Generate</button>
+    <button role="tab" id="tab-saved" aria-selected="false">Saved<span class="count" id="saved-count">0</span></button>
+  </div>
+  <div class="reach">
+    <label for="height">Height</label>
+    <input id="height" type="number" min="120" max="220" step="1" value="170">
+    <label for="wingspan">Wingspan</label>
+    <input id="wingspan" type="number" min="120" max="230" step="1" value="170">
+    <span class="ape" id="ape"></span>
+    <span class="sep" aria-hidden="true"></span>
+    <span class="gap">Max hand gap <select id="factor" aria-label="Share of wingspan">
+      <option value="0.6">60%</option><option value="0.6667">⅔</option><option value="0.75">75%</option>
+    </select> of wingspan: <b id="maxgap"></b></span>
+    <span class="help" tabindex="0" aria-label="About max hand gap">?
+      <span class="tipbox"><b>Hand gap</b>: the straight distance between two hand holds in a row, going up the wall. The biggest one on each climb is drawn as a dashed line.<br><br><b>Max hand gap</b>: a rough stand-in for the biggest gap you can comfortably do, taken as a share of your wingspan. ⅔ is a starting guess, not a measured rule: if climbs you know you can do show bigger gaps, pick 75%.<br><br>Distances assume Kilter's board coordinates are inches (the board is 144 units across and 12 ft wide).</span>
+    </span>
+  </div>
+</header>
+
+<main>
+  <div class="stage">
+    <svg id="board" role="img" aria-label="Climbing board"></svg>
+    <div class="caption" id="caption"></div>
+  </div>
+  <aside id="panel"></aside>
+</main>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(() => {
+  const NS = "http://www.w3.org/2000/svg";
+  const ROLES = ["start", "hand", "finish", "foot"];
+  const $ = id => document.getElementById(id);
+  const el = (tag, attrs = {}, parent) => {
+    const e = document.createElementNS(NS, tag);
+    for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+    if (parent) parent.appendChild(e);
+    return e;
+  };
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+  };
+
+  let INFO = null;
+  const state = {
+    tab: "set",
+    set: { angle: 40, holds: new Map(), result: null, pending: false },
+    gen: { grade: 3, angle: 25, temp: 0.8, limit: true, result: null, idx: 0, busy: false, error: null },
+    body: store.get("setterlab.body", { height: 170, wingspan: 170, factor: 0.6667 }),
+    reach: 113,
+    saved: store.get("setterlab.saved", []),
+    viewing: null,     // index into saved list when viewing a saved climb
+  };
+  function applyBody() {
+    const b = state.body;
+    state.reach = Math.round(b.wingspan * b.factor);
+    $("height").value = b.height; $("wingspan").value = b.wingspan; $("factor").value = String(b.factor);
+    const ape = b.wingspan - b.height;
+    $("ape").textContent = `ape ${ape >= 0 ? "+" : "−"}${Math.abs(ape)} cm`;
+    $("maxgap").textContent = `${state.reach} cm`;
+  }
+  applyBody();
+
+  // ---------------- board
+  let POS, XY, holeEls = new Map(), layers = {};
+  function buildBoard() {
+    const [x0, x1, y0, y1] = INFO.bounds;
+    const pad = 8, W = x1 - x0 + 2 * pad, H = y1 - y0 + 2 * pad + 4;
+    const svg = $("board");
+    svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+    const sx = x => x - x0 + pad, sy = y => H - (y - y0 + pad) - 2;
+    XY = p => { const q = POS.get(p); return [sx(q.x), sy(q.y)]; };
+    el("rect", { x: 1, y: 1, width: W - 2, height: H - 2, rx: 3, fill: "var(--board)", stroke: "var(--board-edge)", "stroke-width": 1 }, svg);
+    // kickboard: the two bottom rows
+    const kTop = sy(12);
+    el("rect", { x: 1, y: kTop, width: W - 2, height: H - 1 - kTop, fill: "var(--kicker)" }, svg);
+    el("line", { x1: 1, x2: W - 1, y1: kTop, y2: kTop, stroke: "var(--board-edge)", "stroke-width": .8 }, svg);
+    const holesG = el("g", {}, svg);
+    layers.gap = el("g", {}, svg);
+    layers.glow = el("g", {}, svg);
+    layers.led = el("g", {}, svg);
+    layers.label = el("g", {}, svg);       // gap label sits above the holds
+    const hitG = el("g", {}, svg);
+    for (const p of INFO.positions) {
+      const [cx, cy] = [sx(p.x), sy(p.y)];
+      el("circle", { cx, cy, r: p.small ? 1.0 : 1.5, class: "hole" }, holesG);
+      const g = el("g", {}, hitG);
+      const hit = el("circle", { cx, cy, r: 3.6, class: "hit" }, g);
+      el("circle", { cx, cy, r: 3.3, class: "hover-ring" }, g);
+      hit.addEventListener("click", () => onHoleClick(p.id, 1));
+      hit.addEventListener("contextmenu", e => { e.preventDefault(); onHoleClick(p.id, 0); });
+      holeEls.set(p.id, g);
+    }
+  }
+
+  function currentClimb() {
+    if (state.tab === "set") return { holds: [...state.set.holds.entries()], angle: state.set.angle };
+    if (state.tab === "gen") {
+      const c = state.gen.result?.candidates?.[state.gen.idx];
+      return c ? { holds: c.holds, angle: c.angle } : { holds: [], angle: state.gen.angle };
+    }
+    const s = state.saved[state.viewing];
+    return s ? { holds: s.holds, angle: s.angle } : { holds: [], angle: 40 };
+  }
+
+  function biggestGap(holds) {
+    const hands = holds.filter(([, r]) => r !== "foot").map(([p]) => POS.get(p)).filter(Boolean)
+      .sort((a, b) => a.y - b.y || a.x - b.x);
+    let best = null;
+    for (let i = 1; i < hands.length; i++) {
+      const d = Math.hypot(hands[i].x - hands[i - 1].x, hands[i].y - hands[i - 1].y);
+      if (!best || d > best.d) best = { d, a: hands[i - 1].id, b: hands[i].id };
+    }
+    return best;
+  }
+
+  function drawHolds() {
+    const { holds, angle } = currentClimb();
+    layers.glow.replaceChildren(); layers.led.replaceChildren(); layers.gap.replaceChildren(); layers.label.replaceChildren();
+    for (const [p, role] of holds) {
+      if (!POS.has(p)) continue;
+      const [cx, cy] = XY(p);
+      el("circle", { cx, cy, r: 3.2, class: `glow r-${role}` }, layers.glow);
+      el("circle", { cx, cy, r: 3.0, class: `led r-${role}` }, layers.led);
+    }
+    const gap = biggestGap(holds);
+    if (gap) {
+      const cm = Math.round(gap.d * INFO.cm_per_unit), over = cm > state.reach;
+      const [ax, ay] = XY(gap.a), [bx, by] = XY(gap.b);
+      const color = over ? "var(--bad)" : "var(--muted)";
+      el("line", { x1: ax, y1: ay, x2: bx, y2: by, class: "gap-line", stroke: color }, layers.gap);
+      // label beside the line's midpoint, pushed sideways so it doesn't sit on a hold
+      const len = Math.hypot(bx - ax, by - ay) || 1, nx = -(by - ay) / len, ny = (bx - ax) / len;
+      const t = el("text", { x: (ax + bx) / 2 + nx * 5, y: (ay + by) / 2 + ny * 5 + 1.4, class: "gap-label", fill: color, "text-anchor": "middle" }, layers.label);
+      t.textContent = `${cm} cm`;
+    }
+    $("board").classList.toggle("read-only", state.tab !== "set");
+    $("caption").textContent = holds.length ? `${holds.length} holds · ${angle}°` : "";
+  }
+
+  // ---------------- interactions
+  function onHoleClick(p, dir) {
+    if (state.tab !== "set") { toast("Switch to “Set a climb” to edit, or use “Edit in setter”."); return; }
+    const h = state.set.holds, cur = h.get(p);
+    if (dir === 0) h.delete(p);
+    else {
+      const next = cur ? ROLES.indexOf(cur) + 1 : 0;
+      if (next >= ROLES.length) h.delete(p); else h.set(p, ROLES[next]);
+    }
+    drawHolds(); requestGrade(); renderPanel();
+  }
+
+  let gradeTimer = null, gradeSeq = 0;
+  function requestGrade() {
+    clearTimeout(gradeTimer);
+    state.set.pending = true;
+    gradeTimer = setTimeout(async () => {
+      const seq = ++gradeSeq;
+      try {
+        const r = await api("/api/grade", { angle: state.set.angle, holds: [...state.set.holds.entries()] });
+        if (seq !== gradeSeq) return;
+        state.set.result = r;
+      } catch (e) { state.set.result = { error: String(e) }; }
+      state.set.pending = false;
+      if (state.tab === "set") renderPanel();
+    }, 220);
+  }
+
+  async function generate() {
+    const g = state.gen;
+    g.busy = true; g.error = null; renderPanel();
+    try {
+      g.result = await api("/api/generate", {
+        angle: g.angle, grade: g.grade, temperature: g.temp, n: 48,
+        max_move_cm: g.limit ? state.reach : null,
+      });
+      g.idx = 0;
+    } catch (e) { g.error = String(e); }
+    g.busy = false;
+    renderPanel(); drawHolds();
+  }
+
+  async function api(path, body) {
+    const r = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    const j = await r.json();
+    if (j.error) throw new Error(j.error);
+    return j;
+  }
+
+  function saveClimb(name, holds, angle, extra = {}) {
+    state.saved.unshift({ name: name || "Untitled", holds, angle, when: new Date().toISOString(), ...extra });
+    store.set("setterlab.saved", state.saved);
+    $("saved-count").textContent = state.saved.length;
+    toast(`Saved “${name || "Untitled"}”`);
+  }
+
+  function toEditor(holds, angle) {
+    state.set.holds = new Map(holds);
+    state.set.angle = angle;
+    setTab("set");
+    requestGrade();
+  }
+
+  function mirror() {
+    const [x0, x1] = INFO.bounds, byXY = new Map(INFO.positions.map(p => [`${p.x},${p.y}`, p.id]));
+    const out = new Map(); let lost = 0;
+    for (const [p, r] of state.set.holds) {
+      const q = POS.get(p), m = byXY.get(`${x0 + x1 - q.x},${q.y}`);
+      if (m) out.set(m, r); else lost++;
+    }
+    state.set.holds = out;
+    if (lost) toast(`${lost} hold${lost > 1 ? "s have" : " has"} no mirror position and ${lost > 1 ? "were" : "was"} dropped.`);
+    drawHolds(); requestGrade(); renderPanel();
+  }
+
+  let toastTimer;
+  function toast(msg) {
+    const t = $("toast"); t.textContent = msg; t.hidden = false;
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => t.hidden = true, 2600);
+  }
+
+  // ---------------- panel rendering
+  const angleOptions = sel => INFO.angles.map(a => `<option value="${a}"${a === sel ? " selected" : ""}>${a}°</option>`).join("");
+  const gradeOptions = sel => INFO.grades.map(g => `<option value="${g}"${g === sel ? " selected" : ""}>V${g}</option>`).join("");
+
+  function reachLine(cm) {
+    if (cm == null) return "";
+    const over = cm > state.reach;
+    return `<div class="stat"><span>Biggest hand gap</span><span><span class="v">${cm} cm</span>
+      <span class="chip ${over ? "over" : "ok"}">${over ? `over your ${state.reach} cm` : `under your ${state.reach} cm`}</span></span></div>`;
+  }
+  function checksBlock(r) {
+    return `<div class="checks">${r.checks.map(c => `
+      <div class="check"><span class="mark ${c.ok ? "ok" : "bad"}">${c.ok ? "✓" : "✗"}</span>
+      <span>${esc(c.label[0].toUpperCase() + c.label.slice(1))}</span>
+      <span class="val"><b>${esc(c.value)}</b> · real ${esc(c.range)}</span></div>`).join("")}</div>`;
+  }
+  function closestLine(r) {
+    const c = r.closest, pct = Math.round(c.overlap * 100);
+    return `<div class="closest">${pct >= 80 ? "Nearly a copy: shares" : "Shares"} <b>${pct}%</b> of its holds with the closest real climb, <b>“${esc(c.name)}”</b> (${esc(c.grade)} at ${c.angle}°).</div>`;
+  }
+
+  function renderSet() {
+    const s = state.set, r = s.result, counts = Object.fromEntries(ROLES.map(k => [k, 0]));
+    for (const role of s.holds.values()) counts[role]++;
+    let grade;
+    if (!s.holds.size) grade = `<div class="empty">Click holds on the board to set a climb.<br>The grade updates as you go.</div>`;
+    else if (!r || r.empty) grade = `<div class="card"><div class="grade"><span class="big pending">V?</span><span class="sub">Add a few more holds</span></div>${warn(r)}</div>`;
+    else if (r.error) grade = `<div class="card"><div class="warnings"><div>${esc(r.error)}</div></div></div>`;
+    else grade = `<div class="card">
+        <div class="grade"><span class="big${s.pending ? " pending" : ""}">V${r.v}</span>
+          <span class="sub"><span>${esc(r.font)} · ${r.difficulty.toFixed(1)} on Kilter's scale</span><span>at ${r.angle}°</span></span></div>
+        <div class="note">Graph-model estimate. On real climbs it is within one grade 82% of the time.</div>
+        ${warn(r)}
+        ${reachLine(r.move_max_cm)}
+        <div><div class="label" style="margin-bottom:6px">Looks like a real climb? ${r.plausible ? "Yes" : "Not quite"}</div>${checksBlock(r)}</div>
+        ${closestLine(r)}
+      </div>`;
+    return `
+      <div class="row">
+        <div class="field"><label for="set-angle">Wall angle</label><select id="set-angle">${angleOptions(s.angle)}</select></div>
+      </div>
+      <div class="hint">Click a hold to cycle <b style="color:var(--start)">start</b> → <b style="color:var(--hand)">hand</b> → <b style="color:var(--finish)">finish</b> → <b style="color:var(--foot)">foot</b> → off. Right-click removes it.</div>
+      <div class="roles">${ROLES.map(k => `<div class="role"><span class="n">${counts[k]}</span><span class="t"><i style="border-color:var(--${k})"></i>${k}</span></div>`).join("")}</div>
+      ${grade}
+      <div class="btns">
+        <button class="btn" id="btn-clear">Clear</button>
+        <button class="btn" id="btn-mirror">Mirror</button>
+      </div>
+      ${s.holds.size >= 2 ? `<form class="save-form" id="save-form"><input id="save-name" placeholder="Name this climb" value="${r && !r.empty && !r.error ? `My V${r.v} at ${s.angle}°` : ""}"><button class="btn">Save</button></form>` : ""}`;
+  }
+  function warn(r) {
+    return r?.warnings?.length ? `<div class="warnings">${r.warnings.map(w => `<div>${esc(w)}</div>`).join("")}</div>` : "";
+  }
+
+  function renderGen() {
+    const g = state.gen, ref = INFO.reach_ref[g.grade];
+    let res = "";
+    if (g.error) res = `<div class="card"><div class="warnings"><div>${esc(g.error)}</div></div></div>`;
+    else if (g.result && !g.result.candidates.length) res = `<div class="empty">No complete climbs came out. Try a bigger max hand gap or more randomness.</div>`;
+    else if (g.result) {
+      const R = g.result, c = R.candidates[g.idx], off = c.off_by;
+      res = `
+        <div class="summary">${R.n_sampled} written · ${R.n_plausible} look real · ${R.n_on_grade} within one grade of V${R.requested.grade}</div>
+        <div class="nav"><button id="prev" aria-label="Previous">‹</button><span class="pos">option ${g.idx + 1} of ${R.candidates.length}</span><button id="next" aria-label="Next">›</button></div>
+        <div class="card">
+          <div class="grade"><span class="big">V${c.v}</span>
+            <span class="sub"><span>${esc(c.font)} · ${c.difficulty.toFixed(1)} on Kilter's scale</span><span>asked for V${R.requested.grade} at ${R.requested.angle}°</span></span></div>
+          <span class="target ${Math.abs(off) <= 1 ? "ok" : "off"}">${off === 0 ? "On target" : `${off > 0 ? "+" : "−"}${Math.abs(off)} grade${Math.abs(off) > 1 ? "s" : ""} from the request`}</span>
+          ${reachLine(c.move_max_cm)}
+          <div><div class="label" style="margin-bottom:6px">Looks like a real climb? ${c.plausible ? "Yes" : "Not quite"}</div>${checksBlock(c)}</div>
+          ${closestLine(c)}
+          <div class="btns"><button class="btn" id="btn-edit">Edit in setter</button></div>
+          <form class="save-form" id="save-form"><input id="save-name" value="Generated V${R.requested.grade} at ${R.requested.angle}° #${g.idx + 1}"><button class="btn">Save</button></form>
+        </div>`;
+    } else res = `<div class="empty">Pick a grade and angle, then generate.<br>The model writes 48 climbs and shows the best matches first.</div>`;
+    return `
+      <div class="row">
+        <div class="field"><label for="gen-grade">Grade</label><select id="gen-grade">${gradeOptions(g.grade)}</select></div>
+        <div class="field"><label for="gen-angle">Wall angle</label><select id="gen-angle">${angleOptions(g.angle)}</select></div>
+        <div class="field"><label for="gen-temp">Randomness</label><select id="gen-temp">
+          ${[[0.6, "Safe"], [0.8, "Balanced"], [1.0, "Loose"], [1.2, "Wild"]].map(([v, n]) => `<option value="${v}"${v === g.temp ? " selected" : ""}>${n}</option>`).join("")}
+        </select></div>
+      </div>
+      <label class="check-line"><input type="checkbox" id="gen-limit"${g.limit ? " checked" : ""}> Keep every hand gap under my max (${state.reach} cm)</label>
+      ${ref ? `<div class="hint">${fitText(ref, g.grade)}</div>` : ""}
+      <div class="btns"><button class="btn primary" id="btn-gen"${g.busy ? " disabled" : ""}>${g.busy ? "Generating…" : "Generate climbs"}</button></div>
+      ${res}`;
+  }
+
+  // share of real climbs of a grade whose biggest hand gap is under the user's max
+  function shareUnder(ref, cm) {
+    const p = ref.pct;                     // percentiles 0, 5, ..., 100
+    if (cm <= p[0]) return 0;
+    if (cm >= p[p.length - 1]) return 100;
+    for (let i = 1; i < p.length; i++) if (cm <= p[i]) return 5 * (i - 1) + 5 * (cm - p[i - 1]) / Math.max(p[i] - p[i - 1], 1e-9);
+    return 100;
+  }
+  function fitText(ref, grade) {
+    const share = Math.round(shareUnder(ref, state.reach));
+    return `About <b>${share}%</b> of real V${grade} climbs keep every hand gap under your ${state.reach} cm. Their biggest gap is ${ref.median} cm on average.`;
+  }
+
+  function renderSaved() {
+    if (!state.saved.length) return `<div class="empty">Nothing saved yet. Save a climb from the setter or from the generator, and it shows up here.</div>`;
+    const v = state.saved[state.viewing];
+    return `
+      ${v ? `<div class="card"><div class="grade"><span class="big" style="font-size:28px">${esc(v.name)}</span></div>
+        <div class="hint">${v.holds.length} holds · ${v.angle}°${v.grade != null ? ` · graph model said V${v.grade}` : ""}</div>
+        <div class="btns"><button class="btn" id="btn-edit-saved">Edit in setter</button></div></div>` : `<div class="hint">Click a saved climb to show it on the board.</div>`}
+      <div class="saved">${state.saved.map((s, i) => `
+        <div class="saved-item">
+          <div><div class="name">${esc(s.name)}</div><div class="meta">${s.angle}° · ${s.holds.length} holds · ${new Date(s.when).toLocaleDateString()}</div></div>
+          <button data-show="${i}">Show</button><button data-del="${i}" aria-label="Delete ${esc(s.name)}">Delete</button>
+        </div>`).join("")}</div>`;
+  }
+
+  function renderPanel() {
+    const p = $("panel");
+    const active = document.activeElement?.id;
+    p.innerHTML = state.tab === "set" ? renderSet() : state.tab === "gen" ? renderGen() : renderSaved();
+    bindPanel();
+    if (active && $(active) && active !== "save-name") $(active).focus();
+  }
+
+  function bindPanel() {
+    const on = (id, ev, fn) => { const e = $(id); if (e) e.addEventListener(ev, fn); };
+    on("set-angle", "change", e => { state.set.angle = +e.target.value; drawHolds(); requestGrade(); renderPanel(); });
+    on("btn-clear", "click", () => { state.set.holds.clear(); state.set.result = null; drawHolds(); renderPanel(); });
+    on("btn-mirror", "click", mirror);
+    on("gen-grade", "change", e => { state.gen.grade = +e.target.value; renderPanel(); });
+    on("gen-angle", "change", e => { state.gen.angle = +e.target.value; });
+    on("gen-temp", "change", e => { state.gen.temp = +e.target.value; });
+    on("gen-limit", "change", e => { state.gen.limit = e.target.checked; });
+    on("btn-gen", "click", generate);
+    on("prev", "click", () => step(-1));
+    on("next", "click", () => step(1));
+    on("btn-edit", "click", () => { const c = state.gen.result.candidates[state.gen.idx]; toEditor(c.holds, c.angle); });
+    on("btn-edit-saved", "click", () => { const s = state.saved[state.viewing]; toEditor(s.holds, s.angle); });
+    on("save-form", "submit", e => {
+      e.preventDefault();
+      const name = $("save-name").value.trim();
+      if (state.tab === "set") saveClimb(name, [...state.set.holds.entries()], state.set.angle, { grade: state.set.result?.v });
+      else { const c = state.gen.result.candidates[state.gen.idx]; saveClimb(name, c.holds, c.angle, { grade: c.v }); }
+    });
+    $("panel").querySelectorAll("[data-show]").forEach(b => b.onclick = () => { state.viewing = +b.dataset.show; renderPanel(); drawHolds(); });
+    $("panel").querySelectorAll("[data-del]").forEach(b => b.onclick = () => {
+      state.saved.splice(+b.dataset.del, 1); store.set("setterlab.saved", state.saved);
+      state.viewing = null; $("saved-count").textContent = state.saved.length; renderPanel(); drawHolds();
+    });
+  }
+
+  function step(d) {
+    const n = state.gen.result.candidates.length;
+    state.gen.idx = (state.gen.idx + d + n) % n;
+    renderPanel(); drawHolds();
+  }
+
+  function setTab(t) {
+    state.tab = t;
+    for (const [id, name] of [["tab-set", "set"], ["tab-gen", "gen"], ["tab-saved", "saved"]])
+      $(id).setAttribute("aria-selected", t === name);
+    renderPanel(); drawHolds();
+  }
+  $("tab-set").onclick = () => setTab("set");
+  $("tab-gen").onclick = () => setTab("gen");
+  $("tab-saved").onclick = () => setTab("saved");
+  const clamp = (v, lo, hi, d) => Math.max(lo, Math.min(hi, Number.isFinite(v) && v > 0 ? v : d));
+  for (const id of ["height", "wingspan", "factor"]) $(id).addEventListener("change", () => {
+    state.body = {
+      height: clamp(+$("height").value, 120, 220, 170),
+      wingspan: clamp(+$("wingspan").value, 120, 230, 170),
+      factor: +$("factor").value,
+    };
+    store.set("setterlab.body", state.body);
+    applyBody(); renderPanel(); drawHolds();
+  });
+  document.addEventListener("keydown", e => {
+    if (state.tab !== "gen" || !state.gen.result || e.target.tagName === "INPUT" || e.target.tagName === "SELECT") return;
+    if (e.key === "ArrowLeft") step(-1);
+    if (e.key === "ArrowRight") step(1);
+  });
+
+  // ---------------- start
+  fetch("/api/board").then(r => r.json()).then(info => {
+    INFO = info;
+    POS = new Map(info.positions.map(p => [p.id, p]));
+    $("saved-count").textContent = state.saved.length;
+    buildBoard(); renderPanel(); drawHolds();
+  }).catch(() => {
+    $("panel").innerHTML = `<div class="empty">Can't reach the server. Start it with <code>python app.py</code> and reload.</div>`;
+  });
+})();
+</script>
+</body>
+</html>

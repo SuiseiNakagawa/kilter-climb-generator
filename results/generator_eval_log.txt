@@ -1,0 +1,9 @@
+rules: {'raw_wellformed': 0.874, 'raw_finished': 1.0, 'with_rules_plausible': 0.957, 'raw_plausible_if_wellformed': 0.965}
+grade control: 68.0% within one grade of the request (shuffled requests: 26.1%; real climbs: 82.2%), Spearman 0.85
+plausible 92.6%; near copies 0.0% (real test climbs: 7.9%); exact copies 0.0% (real: 2.7%)
+temperature {'temperature': 0.6, 'plausible': 0.968, 'new': 0.993, 'exact_copy': 0.007, 'within_1': 0.757, 'repeats': 0.0}
+temperature {'temperature': 0.8, 'plausible': 0.979, 'new': 1.0, 'exact_copy': 0.0, 'within_1': 0.786, 'repeats': 0.0}
+temperature {'temperature': 1.0, 'plausible': 0.979, 'new': 1.0, 'exact_copy': 0.0, 'within_1': 0.732, 'repeats': 0.0}
+temperature {'temperature': 1.2, 'plausible': 0.918, 'new': 1.0, 'exact_copy': 0.0, 'within_1': 0.671, 'repeats': 0.0}
+temperature {'temperature': 1.5, 'plausible': 0.75, 'new': 1.0, 'exact_copy': 0.0, 'within_1': 0.475, 'repeats': 0.0}
+saved results/generator_results.json, generated_climbs.jsonl and 3 figures

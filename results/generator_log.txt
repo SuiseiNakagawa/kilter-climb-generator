@@ -1,0 +1,15 @@
+2,117,184 parameters; 71,752 training climbs, 1,198,587 tokens
+epoch  1  train 4.913  val 3.810  (perplexity 45 of 1709 tokens)  296s
+epoch  2  train 3.656  val 3.581  (perplexity 36 of 1709 tokens)  262s
+epoch  3  train 3.479  val 3.485  (perplexity 33 of 1709 tokens)  267s
+epoch  4  train 3.369  val 3.460  (perplexity 32 of 1709 tokens)  279s
+epoch  5  train 3.280  val 3.428  (perplexity 31 of 1709 tokens)  263s
+epoch  6  train 3.195  val 3.429  (perplexity 31 of 1709 tokens)  266s
+epoch  7  train 3.113  val 3.426  (perplexity 31 of 1709 tokens)  265s
+epoch  8  train 3.035  val 3.431  (perplexity 31 of 1709 tokens)  269s
+epoch  9  train 2.967  val 3.436  (perplexity 31 of 1709 tokens)  268s
+epoch 10  train 2.915  val 3.442  (perplexity 31 of 1709 tokens)  282s
+epoch 11  train 2.881  val 3.446  (perplexity 31 of 1709 tokens)  285s
+epoch 12  train 2.864  val 3.447  (perplexity 31 of 1709 tokens)  278s
+best epoch 7: val loss 3.426
+saved models/generator.pt and results/generator_training.png
